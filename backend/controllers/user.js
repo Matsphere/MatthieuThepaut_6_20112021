@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 
 exports.signup = async (req, res, next) => {
   try {
@@ -43,3 +44,10 @@ exports.login = async (req, res, next) => {
     res.status(500).json({ err });
   }
 };
+
+exports.loginLimiter = (req, res, next) =>{ rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 10, 
+  message:
+    "Trop de tentative de connexion successive! Réessayez dans 15 minutes! ",
+});};
