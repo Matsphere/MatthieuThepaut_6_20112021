@@ -1,20 +1,46 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-const rateLimit = require("express-rate-limit");
+const validator = require("password-validator");
+
+let schema = new validator();
+
+schema
+  .is()
+  .min(8)
+  .is()
+  .max(20)
+  .has()
+  .uppercase()
+  .has()
+  .lowercase()
+  .has()
+  .digits()
+  .has()
+  .not()
+  .spaces();
 
 exports.signup = async (req, res, next) => {
   try {
-    const hash = bcrypt.hash(req.body.password, 10);
-    const user = new User({
-      email: req.body.email,
-      password: hash,
-    });
     try {
-      await user.save();
+      if (!schema.validate(req.body.password))
+        throw new Error(
+          "Le mot de passe doit contenir 8 caractères au minimum dont au moins une majuscule et un chiffre"
+        );
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
+    try {
+      const hash = await bcrypt.hash(req.body.password, 10);
+      const user = new User({
+        email: req.body.email,
+        password: hash,
+      });
+
+      const data = await user.save();
       res.status(201).json({ message: "Utilisateur créé !" });
     } catch (err) {
-      res.status(400).json({ err });
+      res.status(400).json({ message: "Email déjà utilisé" });
     }
   } catch (err) {
     res.status(500).json({ err });
@@ -44,10 +70,3 @@ exports.login = async (req, res, next) => {
     res.status(500).json({ err });
   }
 };
-
-exports.loginLimiter = (req, res, next) =>{ rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 10, 
-  message:
-    "Trop de tentative de connexion successive! Réessayez dans 15 minutes! ",
-});};

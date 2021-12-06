@@ -5,6 +5,8 @@ const saucesRoutes = require("./routes/sauces");
 const userRoutes = require("./routes/user");
 const path = require("path");
 const helmet = require("helmet");
+const morgan = require("morgan");
+const clean = require("xss-clean");
 
 const app = express();
 mongoose
@@ -26,7 +28,9 @@ app.use((req, res, next) => {
   );
   next();
 });
+app.use(morgan("tiny"));
 app.use(helmet());
+app.use(clean());
 app.use(bodyParser.json());
 app.use("/api/sauces", saucesRoutes);
 app.use("/api/auth", userRoutes);

@@ -10,7 +10,7 @@ exports.createSauce = async (req, res, next) => {
       ...sauceObject,
       imageUrl: req.file.filename,
     });
-    const data = await sauce.save();
+    await sauce.save();
     res.status(201).json({ message: "Sauce enregistrée !" });
   } catch (err) {
     res.status(400).json({ err });
@@ -40,7 +40,7 @@ exports.modifySauce = async (req, res, next) => {
           imageUrl: req.file.filename,
         }
       : { ...req.body };
-    const newSauce = await Sauce.updateOne(
+    await Sauce.updateOne(
       { _id: req.params.id },
       { ...sauceObject, _id: req.params.id }
     );
@@ -70,6 +70,9 @@ exports.deleteSauce = async (req, res, next) => {
 exports.getAllSauces = async (req, res, next) => {
   try {
     const sauces = await Sauce.find();
+    sauces.forEach((sauce) => {
+      sauce.imageUrl = process.env.URL + process.env.DIR + sauce.imageUrl;
+    });
     res.status(200).json(sauces);
   } catch (err) {
     res.status(400).json({
@@ -81,41 +84,62 @@ exports.getAllSauces = async (req, res, next) => {
 exports.feedback = async (req, res, next) => {
   try {
     const sauce = await Sauce.findOne({ _id: req.params.id });
-    const userId = req.userId;
-    const like = req.like;
+    const userId = req.body.userId;
+    const like = req.body.like;
+    // if (userId == sauce.userId) {
+    //   throw new Error("L'auteur de la sauce ne peut pas voter!");
+    // }
     switch (like) {
       case -1:
-        if (userId == sauce.userId) {
-          throw "L'auteur de la sauce ne peut pas voter!";
-        }
-        sauces.dislikes++;
-        sauces.usersDisliked.push(userId);
+        await Sauce.updateOne(
+          { _id: sauce._id },
+          {
+            $inc: { dislikes: 1 },
+            $push: { usersDisliked: userId },
+          }
+        );
+        res.status(201).json("Vote enregistré!");
         break;
 
       case 0:
-        if (sauce.usersDisliked.findindex((id) => id == userId) > -1) {
-          const index = sauce.usersDisliked.findindex((id) => id == userId);
-          sauces.dislikes--;
-          sauces.usersDisliked.splice(index, 1);
-          break;
-        } else {
-          const index = sauce.usersliked.findindex((id) => id == userId);
-          sauces.likes--;
-          sauces.usersLiked.splice(index, 1);
-          break;
+        if (sauce.usersDisliked.find((user) => user == userId)) {
+          await Sauce.updateOne(
+            { _id: sauce._id },
+            {
+              $inc: { dislikes: -1 },
+              $pull: { usersDisliked: userId },
+            }
+          );
+          res.status(201).json("Vote enregistré!");
         }
 
-      case 1:
-        if (userId == sauce.userId) {
-          throw "L'auteur de la sauce ne peut pas voter!";
+        if (sauce.usersLiked.find((user) => user == userId)) {
+          await Sauce.updateOne(
+            { _id: sauce._id },
+            {
+              $inc: { likes: -1 },
+              $pull: { usersLiked: userId },
+            }
+          );
+          res.status(201).json("Vote enregistré!");
         }
-        sauces.likes++;
-        sauces.usersLiked.push(userId);
         break;
+
+      case 1:
+        await Sauce.updateOne(
+          { _id: sauce._id },
+          {
+            $inc: { likes: 1 },
+            $push: { usersLiked: userId },
+          }
+        );
+        res.status(201).json("Vote enregistré!");
+        break;
+
+      default:
+        res.status(400).json("Mauvaise requête!");
     }
   } catch (err) {
-    res.status(400).json({
-      error: err,
-    });
+    res.status(400).json({ err });
   }
 };
