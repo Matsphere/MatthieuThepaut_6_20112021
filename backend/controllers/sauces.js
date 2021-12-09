@@ -13,7 +13,7 @@ exports.createSauce = async (req, res, next) => {
     await sauce.save();
     res.status(201).json({ message: "Sauce enregistrée !" });
   } catch (err) {
-    res.status(400).json({ err });
+    res.status(err.statusCode).json({ err });
   }
 };
 
@@ -26,8 +26,8 @@ exports.getOneSauce = async (req, res, next) => {
     sauce.imageUrl = process.env.URL + process.env.DIR + fileName;
     res.status(200).json(sauce);
   } catch (err) {
-    res.status(404).json({
-      error: error,
+    res.status(err.statusCode).json({
+      err,
     });
   }
 };
@@ -46,7 +46,7 @@ exports.modifySauce = async (req, res, next) => {
     );
     res.status(200).json({ message: "Sauce modifiée !" });
   } catch (err) {
-    res.status(400).json({ error });
+    res.status(err.statusCode).json({ err });
   }
 };
 
@@ -55,15 +55,11 @@ exports.deleteSauce = async (req, res, next) => {
     const sauce = await Sauce.findOne({ _id: req.params.id });
     const filename = sauce.imageUrl;
     fs.unlink(`images/${filename}`, async () => {
-      try {
-        await Sauce.deleteOne({ _id: req.params.id });
-        res.status(200).json({ message: "Sauce supprimée !" });
-      } catch (err) {
-        res.status(400).json({ err });
-      }
+      await Sauce.deleteOne({ _id: req.params.id });
+      res.status(200).json({ message: "Sauce supprimée !" });
     });
   } catch (err) {
-    res.status(500).json({ err });
+    res.status(err.statusCode).json({ err });
   }
 };
 
@@ -75,8 +71,8 @@ exports.getAllSauces = async (req, res, next) => {
     });
     res.status(200).json(sauces);
   } catch (err) {
-    res.status(400).json({
-      error: error,
+    res.status(err.statusCode).json({
+      err,
     });
   }
 };
@@ -87,7 +83,9 @@ exports.feedback = async (req, res, next) => {
     const userId = req.body.userId;
     const like = req.body.like;
     // if (userId == sauce.userId) {
-    //   throw new Error("L'auteur de la sauce ne peut pas voter!");
+    //   res
+    //     .status(401)
+    //     .json({ message: "L'auteur de la sauce ne peut pas voter!" });
     // }
     switch (like) {
       case -1:
@@ -140,6 +138,6 @@ exports.feedback = async (req, res, next) => {
         res.status(400).json("Mauvaise requête!");
     }
   } catch (err) {
-    res.status(400).json({ err });
+    res.status(err.statusCode).json({ err });
   }
 };

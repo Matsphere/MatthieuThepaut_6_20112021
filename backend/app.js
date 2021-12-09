@@ -1,5 +1,4 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const saucesRoutes = require("./routes/sauces");
 const userRoutes = require("./routes/user");
@@ -7,6 +6,7 @@ const path = require("path");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const clean = require("xss-clean");
+const mongodbSanitize = require("mongodb-sanitize");
 
 const app = express();
 mongoose
@@ -28,10 +28,11 @@ app.use((req, res, next) => {
   );
   next();
 });
+app.use(mongodbSanitize({ replaceBy: "_" }));
 app.use(morgan("tiny"));
 app.use(helmet());
 app.use(clean());
-app.use(bodyParser.json());
+app.use(express.json());
 app.use("/api/sauces", saucesRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/images", express.static(path.join(__dirname, "images")));

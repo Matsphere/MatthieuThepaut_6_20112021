@@ -6,23 +6,19 @@ const MIME_TYPES = {
   "image/png": "png",
 };
 
+const imageFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    return cb("Fichiers image seulement", false);
+  }
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
     callback(null, "images");
   },
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype == "image/png" ||
-      file.mimetype == "image/jpg" ||
-      file.mimetype == "image/jpeg"
-    ) {
-      cb(null, true);
-    } else {
-      return cb(
-        new Error("Seulement les formats .png, .jpg et .jpeg sont acceptés!")
-      );
-    }
-  },
+
   filename: (req, file, callback) => {
     const name = file.originalname.split(" ").join("_");
     const extension = MIME_TYPES[file.mimetype];
@@ -30,4 +26,6 @@ const storage = multer.diskStorage({
   },
 });
 
-module.exports = multer({ storage: storage }).single("image");
+module.exports = multer({ storage: storage, fileFilter: imageFilter }).single(
+  "image"
+);

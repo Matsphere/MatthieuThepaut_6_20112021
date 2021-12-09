@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const errors = require("mongoose-errors");
 
 const sauceSchema = mongoose.Schema({
   name: { type: String, required: true },
@@ -14,4 +15,5 @@ const sauceSchema = mongoose.Schema({
   usersDisliked: { type: Array, required: true },
 });
 
+sauceSchema.plugin(errors);
 module.exports = mongoose.model("Sauce", sauceSchema);
