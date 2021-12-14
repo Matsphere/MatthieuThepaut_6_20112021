@@ -28,7 +28,8 @@ app.use((req, res, next) => {
   );
   next();
 });
-app.use(mongodbSanitize({ replaceBy: "_" }));
+
+app.use(mongodbSanitize(["body", "query"], { replaceBy: "_" }));
 app.use(morgan("tiny"));
 app.use(helmet());
 app.use(clean());
